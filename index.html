@@ -72,7 +72,7 @@
     /* DASHBOARD */
     #dashboard {
       display: grid;
-      grid-template-columns: repeat(7, 1fr); /* ✅ 7 per row */
+      grid-template-columns: repeat(7, 1fr); 
       gap: 15px;
       margin-top: 15px;
       justify-content: start;
@@ -233,7 +233,7 @@
     const name = regname.value;
     const email = regEmail.value;
     const password = regPass.value;
-    const role = regRole.value; // ✅ get role
+    const role = regRole.value; 
 
     const res = await api("/register", "POST", {
       name,
@@ -277,7 +277,7 @@
       date: date.value
     });
 
-    if (!res) return; // ✅ stop if failed
+    if (!res) return;
 
     alert("Added");
     amount.value = "";
@@ -297,7 +297,7 @@
 
     const res = await api(url);
 
-    records.innerHTML = ""; // clear old
+    records.innerHTML = ""; 
 
     const role = localStorage.getItem("role");
 
@@ -385,7 +385,6 @@
 
     let html = "";
 
-    // ✅ Overall first
     html += `
     <div class="dashboard-box">
       <h4>Overall</h4>
@@ -395,7 +394,6 @@
     </div>
   `;
 
-    // ✅ Then users
     if (res.userSummary) {
       res.userSummary.forEach(u => {
         html += `
