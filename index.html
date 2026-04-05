@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Finance App</title>
+  <style>
+    body {
+      font-family: Arial;
+      background: #f5f6fa;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h2 {
+      margin-top: 20px;
+    }
+
+    input, select, button {
+      padding: 8px;
+      margin: 5px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      background: #4CAF50;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      opacity: 0.9;
+    }
+
+    /* CARD STYLE */
+    .card {
+      background: white;
+      padding: 12px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      font-size: 14px;
+    }
+
+    .card-actions {
+      margin-top: 10px;
+    }
+
+    .card h4 {
+      margin: 0;
+      color: #333;
+    }
+
+    .card p {
+      margin: 4px 0;
+    }
+
+    .delete-btn {
+      background: red;
+    }
+
+    .update-btn {
+      background: orange;
+    }
+
+    /* GRID CONTAINER */
+    #records {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 15px;
+    }
+
+    /* DASHBOARD */
+    #dashboard {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr); /* ✅ 7 per row */
+      gap: 15px;
+      margin-top: 15px;
+      justify-content: start;
+    }
+
+    .dashboard-box {
+      background: white;
+      padding: 12px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      font-size: 13px;
+      text-align: center;
+    }
+    .user-dashboards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .dashboard-box.small {
+      width: auto;
+      padding: 15px;
+    }
+    /*.dashboard-section {*/
+    /*  display: flex;*/
+    /*  align-items: flex-start;*/
+    /*  gap: 20px;*/
+    /*}*/
+
+    /*.dashboard-section button {*/
+    /*  height: fit-content;*/
+    /*}*/
+    .card input{
+      width: 33%;
+      margin: 5px 0;
+      padding: 5px;
+    }
+    .card select {
+      margin: 5px 0;
+      padding: 5px;
+    }
+    #logoutBtn {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #4CAF50;
+      color: white;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<div id="auth">
+  <h2>Register</h2>
+  <input type="text" id="regname" placeholder="Enter Name" required />
+  <input id="regEmail" placeholder="email" />
+  <input id="regPass" placeholder="password" />
+
+  <label>Select Role:</label>
+  <select id="regRole">
+    <option value="analyst">Analyst</option>
+    <option value="admin">Admin</option>
+  </select>
+
+  <button onclick="register()">Register</button>
+
+  <h2>Login</h2>
+  <input id="logEmail" placeholder="email" />
+  <input id="logPass" placeholder="password" />
+  <button onclick="login()">Login</button>
+</div>
+
+<div id="app" style="display:none">
+  <button id="logoutBtn">Logout</button>
+  <div class="card">
+  <h2>Create Record</h2>
+  <input id="amount" placeholder="amount" />
+
+  <!-- TYPE DROPDOWN -->
+  <select id="type">
+    <option value="">Select Type</option>
+    <option value="income">Income</option>
+    <option value="expense">Expense</option>
+  </select>
+
+  <!-- CATEGORY DROPDOWN -->
+  <select id="category">
+    <option value="">Select Category</option>
+    <option value="salary">Salary (Income)</option>
+    <option value="freelance">Freelance (Income)</option>
+    <option value="business">Business (Income)</option>
+    <option value="food">Food (Expense)</option>
+    <option value="rent">Rent (Expense)</option>
+    <option value="travel">Travel (Expense)</option>
+    <option value="shopping">Shopping (Expense)</option>
+    <option value="bills">Bills (Expense)</option>
+    <option value="entertainment">Entertainment (Expense)</option>
+  </select>
+
+  <input id="date" placeholder="YYYY-MM-DD" />
+  <button onclick="createRecord()">Add</button>
+  </div>
+  <h2>Filter</h2>
+
+  <!-- FILTER TYPE -->
+  <select id="filterType">
+    <option value="">All Types</option>
+    <option value="income">Income</option>
+    <option value="expense">Expense</option>
+  </select>
+
+  <!-- FILTER CATEGORY -->
+  <select id="filterCategory">
+    <option value="">All Categories</option>
+    <option value="salary">Salary</option>
+    <option value="freelance">Freelance</option>
+    <option value="business">Business</option>
+    <option value="food">Food</option>
+    <option value="rent">Rent</option>
+    <option value="travel">Travel</option>
+    <option value="shopping">Shopping</option>
+    <option value="bills">Bills</option>
+    <option value="entertainment">Entertainment</option>
+  </select>
+
+  <button onclick="getRecords()">Apply Filter</button>
+
+  <h2>Records</h2>
+  <button onclick="getRecords()">Load</button>
+  <div id="records"></div>
+
+  <h2>Dashboard</h2>
+  <button onclick="getDashboard()">Load</button>
+  <div id="dashboard"></div>
+</div>
+
+<script>
+  const BASE = "http://localhost:5000/api";
+  const api = async (url, method = "GET", body) => {
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(BASE + url, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": token ? `Bearer ${token}` : ""
+      },
+      body: body ? JSON.stringify(body) : undefined
+    });
+
+    const text = await res.text();   // 👈 CHANGE THIS
+
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      console.error("RAW RESPONSE:", text); // 👈 SEE ACTUAL ERROR
+      alert("Server error. Check console.");
+    }
+  };
+
+  window.register = async () => {
+    const name = regname.value;
+    const email = regEmail.value;
+    const password = regPass.value;
+    const role = regRole.value; // ✅ get role
+
+    const res = await api("/register", "POST", {
+      name,
+      email,
+      password,
+      role
+    });
+
+    if (!res) return;
+
+    alert("Registered successfully");
+    regname.value = "";
+    regEmail.value = "";
+    regPass.value = "";
+  };
+
+  window.login = async () => {
+    const res = await api("/login", "POST", {
+      email: logEmail.value,
+      password: logPass.value
+    });
+
+    localStorage.setItem("token", res.token);
+
+    const payload = JSON.parse(atob(res.token.split(".")[1]));
+    localStorage.setItem("role", payload.role);
+
+    auth.style.display = "none";
+    app.style.display = "block";
+
+    logEmail.value = "";
+    logPass.value = "";
+
+  };
+
+  window.createRecord = async () => {
+    const res = await api("/records", "POST", {
+      amount: Number(amount.value),
+      type: type.value,
+      category: category.value,
+      date: date.value
+    });
+
+    if (!res) return; // ✅ stop if failed
+
+    alert("Added");
+    amount.value = "";
+    type.value = "";
+    category.value = "";
+    date.value = "";
+
+  };
+
+  window.getRecords = async () => {
+    const t = filterType.value;
+    const c = filterCategory.value;
+
+    let url = "/records?";
+    if (t) url += `type=${t}&`;
+    if (c) url += `category=${c}`;
+
+    const res = await api(url);
+
+    records.innerHTML = ""; // clear old
+
+    const role = localStorage.getItem("role");
+
+    res.forEach(r => {
+      const div = document.createElement("div");
+      div.className = "card";
+
+      div.innerHTML = `
+        <h4>${r.user?.name || "Unknown"}</h4>
+        <p><b>Role:</b> ${r.user?.role}</p>
+
+        <p><b>Amount:</b> ₹${r.amount}</p>
+        <p><b>Type:</b> ${r.type}</p>
+        <p><b>Category:</b> ${r.category}</p>
+        <p><b>Date:</b> ${r.date.split("T")[0]}</p>
+
+        ${role === "admin" ? `
+          <div class="card-actions">
+            <button onclick="showUpdateForm(this,'${r._id}', '${r.amount}', '${r.type}', '${r.category}')">
+                Update
+            </button>
+            <button class="delete-btn" onclick="deleteRecord('${r._id}')">Delete</button>
+          </div>
+        ` : ""}
+      `;
+
+      records.appendChild(div);
+    });
+  };
+
+  window.updateRecord = async (id) => {
+    const amount = document.getElementById(`upd-amount-${id}`).value;
+    const type = document.getElementById(`upd-type-${id}`).value;
+    const category = document.getElementById(`upd-category-${id}`).value;
+
+    await api(`/records/${id}`, "PATCH", {
+      amount: Number(amount),
+      type,
+      category,
+    });
+
+    getRecords();
+  };
+
+  window.showUpdateForm = (btn,id, amount, type, category) => {
+    const card = btn.closest(".card");
+
+    card.innerHTML = `
+    <h4>Update Record</h4>
+
+    <input type="number" id="upd-amount-${id}" value="${amount}" />
+
+    <select id="upd-type-${id}">
+      <option value="income" ${type === "income" ? "selected" : ""}>Income</option>
+      <option value="expense" ${type === "expense" ? "selected" : ""}>Expense</option>
+    </select>
+
+    <select id="upd-category-${id}">
+      <option value="salary" ${category === "salary" ? "selected" : ""}>Salary (Income)</option>
+      <option value="freelance" ${category === "freelance" ? "selected" : ""}>Freelance (Income)</option>
+      <option value="business" ${category === "business" ? "selected" : ""}>Business (Income)</option>
+      <option value="food" ${category === "food" ? "selected" : ""}>Food (Expense)</option>
+      <option value="rent" ${category === "rent" ? "selected" : ""}>Rent (Expense)</option>
+      <option value="travel" ${category === "travel" ? "selected" : ""}>Travel (Expense)</option>
+      <option value="shopping" ${category === "shopping" ? "selected" : ""}>Shopping (Expense)</option>
+      <option value="bills" ${category === "bills" ? "selected" : ""}>Bills (Expense)</option>
+      <option value="entertainment" ${category === "entertainment" ? "selected" : ""}>Entertainment (Expense)</option>
+    </select>
+
+    <button onclick="updateRecord('${id}')">Save</button>
+    <button onclick="getRecords()">Cancel</button>
+  `;
+  };
+
+  window.deleteRecord = async (id) => {
+    if (!confirm("Delete this record?")) return;
+
+    await api(`/records/${id}`, "DELETE");
+
+    getRecords();
+  };
+
+  window.getDashboard = async () => {
+    const res = await api("/dashboard");
+
+    let html = "";
+
+    // ✅ Overall first
+    html += `
+    <div class="dashboard-box">
+      <h4>Overall</h4>
+      <p>Income: ₹${res.totalIncome.toLocaleString()}</p>
+      <p>Expense: ₹${res.totalExpense.toLocaleString()}</p>
+      <p>Balance: ₹${res.netBalance.toLocaleString()}</p>
+    </div>
+  `;
+
+    // ✅ Then users
+    if (res.userSummary) {
+      res.userSummary.forEach(u => {
+        html += `
+        <div class="dashboard-box">
+          <h4>${u.name}</h4>
+          <p>Income: ₹${u.income.toLocaleString()}</p>
+          <p>Expense: ₹${u.expense.toLocaleString()}</p>
+          <p>Balance: ₹${(u.income - u.expense).toLocaleString()}</p>
+        </div>
+      `;
+      });
+    }
+
+    dashboard.innerHTML = html;
+  };
+
+  document.getElementById("logoutBtn").onclick = () => {
+    localStorage.removeItem("token");
+    document.body.innerHTML = "";
+    location.reload();
+  };
+</script>
+
+</body>
+</html>
